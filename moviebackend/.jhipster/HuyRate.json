@@ -1,0 +1,47 @@
+{
+    "name": "HuyRate",
+    "fields": [
+        {
+            "fieldName": "star",
+            "fieldType": "Integer",
+            "fieldValidateRules": [
+                "min",
+                "max",
+                "required"
+            ],
+            "fieldValidateRulesMin": "1",
+            "fieldValidateRulesMax": "5"
+        },
+        {
+            "fieldName": "content",
+            "fieldType": "String"
+        },
+        {
+            "fieldName": "dateCreate",
+            "fieldType": "Instant"
+        }
+    ],
+    "relationships": [
+        {
+            "relationshipType": "many-to-one",
+            "otherEntityName": "huyMovie",
+            "otherEntityRelationshipName": "huyRate",
+            "relationshipName": "movie",
+            "otherEntityField": "id"
+        }
+    ],
+    "changelogDate": "20220907062200",
+    "entityTableName": "huy_rate",
+    "dto": "no",
+    "pagination": "pagination",
+    "service": "serviceImpl",
+    "jpaMetamodelFiltering": false,
+    "fluentMethods": true,
+    "readOnly": false,
+    "embedded": false,
+    "clientRootFolder": "",
+    "applications": [
+        "moviebackend"
+    ],
+    "searchEngine": "elasticsearch"
+}
