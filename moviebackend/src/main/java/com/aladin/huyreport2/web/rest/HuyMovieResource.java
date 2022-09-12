@@ -9,9 +9,12 @@ import io.github.jhipster.web.util.PaginationUtil;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,6 +36,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 @RestController
 @RequestMapping("/api")
 public class HuyMovieResource {
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     private final Logger log = LoggerFactory.getLogger(HuyMovieResource.class);
 
@@ -61,6 +66,7 @@ public class HuyMovieResource {
             throw new BadRequestAlertException("A new huyMovie cannot already have an ID", ENTITY_NAME, "idexists");
         }
         HuyMovie result = huyMovieService.save(huyMovie);
+        redisTemplate.opsForHash().put("movie",huyMovie.getId(),0);
         return ResponseEntity.created(new URI("/api/huy-movies/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, true, ENTITY_NAME, result.getId().toString()))
             .body(result);
@@ -117,7 +123,15 @@ public class HuyMovieResource {
     public ResponseEntity<HuyMovie> getHuyMovie(@PathVariable Long id) {
         log.debug("REST request to get HuyMovie : {}", id);
         Optional<HuyMovie> huyMovie = huyMovieService.findOne(id);
+        int x = (Integer) redisTemplate.opsForHash().get("movie",huyMovie.get().getId());
+        redisTemplate.opsForHash().put("movie",huyMovie.get().getId(),x+1);
+
         return ResponseUtil.wrapOrNotFound(huyMovie);
+    }
+    @GetMapping("/view-huy-movies/{id}")
+    public ResponseEntity<Integer> getView (@PathVariable Long id){
+        Optional<HuyMovie> huyMovie = huyMovieService.findOne(id);
+        return ResponseEntity.ok((Integer)redisTemplate.opsForHash().get("movie",huyMovie.get().getId()) );
     }
 
     /**
