@@ -47,7 +47,9 @@ public class HuyMovieServiceImpl implements HuyMovieService {
         huyMovieSearchRepository.save(result);
         return result;
     }
-
+    public HuyMovie findMovieByRateId(long rateId){
+        return huyMovieRepository.findHuyMovieByRate(rateId);
+    }
     /**
      * Get all the huyMovies.
      *

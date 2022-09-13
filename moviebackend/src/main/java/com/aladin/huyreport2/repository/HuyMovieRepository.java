@@ -26,4 +26,8 @@ public interface HuyMovieRepository extends JpaRepository<HuyMovie, Long> {
 
     @Query("select huyMovie from HuyMovie huyMovie left join fetch huyMovie.genres left join fetch huyMovie.actors where huyMovie.id =:id")
     Optional<HuyMovie> findOneWithEagerRelationships(@Param("id") Long id);
+
+    @Query(value = "select * from huy_movie m where m.id in\n" +
+        "(select r.movie_id from huy_rate r where r.id =?1)",nativeQuery = true)
+    HuyMovie findHuyMovieByRate(long id);
 }

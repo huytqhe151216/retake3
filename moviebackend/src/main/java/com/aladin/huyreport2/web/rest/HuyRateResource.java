@@ -1,14 +1,20 @@
 package com.aladin.huyreport2.web.rest;
 
+import com.aladin.huyreport2.domain.DataRate;
+import com.aladin.huyreport2.domain.HuyMovie;
 import com.aladin.huyreport2.domain.HuyRate;
 import com.aladin.huyreport2.domain.User;
 import com.aladin.huyreport2.repository.HuyRateRepository;
+import com.aladin.huyreport2.repository.UserRepository;
 import com.aladin.huyreport2.repository.search.HuyRateSearchRepository;
 import com.aladin.huyreport2.service.HuyRateService;
+import com.aladin.huyreport2.service.ProducerKafkaService;
 import com.aladin.huyreport2.service.UserService;
+import com.aladin.huyreport2.service.impl.HuyMovieServiceImpl;
 import com.aladin.huyreport2.service.impl.HuyRateServiceImpl;
 import com.aladin.huyreport2.web.rest.errors.BadRequestAlertException;
 
+import com.google.gson.Gson;
 import io.github.jhipster.web.util.HeaderUtil;
 import io.github.jhipster.web.util.PaginationUtil;
 import io.github.jhipster.web.util.ResponseUtil;
@@ -42,14 +48,20 @@ public class HuyRateResource {
     private final Logger log = LoggerFactory.getLogger(HuyRateResource.class);
 
     private static final String ENTITY_NAME = "moviebackendHuyRate";
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${jhipster.clientApp.name}")
     private String applicationName;
     @Autowired
     private HuyRateServiceImpl huyRateServiceImpl;
     @Autowired
+    private HuyMovieServiceImpl huyMovieServiceImpl;
+    @Autowired
     private UserService userService;
     private final HuyRateService huyRateService;
+    @Autowired
+    private ProducerKafkaService producerKafkaService;
 
     public HuyRateResource(HuyRateService huyRateService) {
         this.huyRateService = huyRateService;
@@ -145,8 +157,20 @@ public class HuyRateResource {
         log.debug("REST request to delete HuyRate : {}", id);
         User user = userService.getUserWithAuthorities().get();
         Long id2 = huyRateServiceImpl.findOne(id).get().getUser().getId();
-        if (user.getId()!=id2 && user.getAuthorities().stream().noneMatch(x->x.getName().equals("ADMIN_ROLE"))){
+        Long id1= user.getId();
+        Boolean z= id1.longValue()!=id2.longValue();
+        Boolean y= user.getAuthorities().stream().noneMatch(x->x.getName().equals("ROLE_ADMIN"));
+        if (user.getAuthorities().stream().noneMatch(x->x.getName().equals("ROLE_ADMIN")) && z  ){
             throw new AuthorizationServiceException("You are not authorized to delete this rate");
+        }
+        if (!user.getAuthorities().stream().noneMatch(x->x.getName().equals("ROLE_ADMIN"))){
+            HuyMovie huyMovie= huyMovieServiceImpl.findMovieByRateId(id);
+            User user1 = userRepository.findUserByRateId(id);
+            DataRate dataRate = new DataRate();
+            dataRate.setEmail(user1.getEmail());
+            dataRate.setMovieName(huyMovie.getName());
+            Gson gson = new Gson();
+            producerKafkaService.publish("movie",gson.toJson(dataRate));
         }
         huyRateService.delete(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id.toString())).build();
